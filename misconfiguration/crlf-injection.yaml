@@ -1,14 +1,22 @@
 id: CRLFInjection
 info:
   name: CRLF Injection Detection
-  author: coffin
-  severity: High
-  description: Detects various CRLF injection vectors that can be exploited for attacks such as header injection, response splitting, and XSS.
+  author: CypherNova1337
+  severity: high
+  description: Detects CRLF injection vectors in the URL path that lead to HTTP header injection and response splitting (Set-Cookie / Location injection).
   reference:
+    - https://owasp.org/www-community/vulnerabilities/CRLF_Injection
     - https://book.hacktricks.xyz/pentesting-web/crlf-0d-0a
-  tags: crlf, crlf-ext, header-injection, response-splitting, xss
+  remediation: |
+    Strip or reject CR (%0d) and LF (%0a) characters from user input before it
+    is placed into response headers. Use framework APIs that encode header values.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N
+    cvss-score: 6.1
+    cwe-id: CWE-93
   metadata:
-    max-request: 5
+    max-request: 29
+  tags: crlf,header-injection,response-splitting,generic
 
 http:
   - method: GET

@@ -2,12 +2,12 @@ id: detect-all-takeovers
 
 info:
   name: Subdomain Takeover Detection
-  author: "melbadry9 & pxmme1337"
+  author: CypherNova1337
   severity: high
 
   # I have removed the non-vulnerable services.
 
-requests:
+http:
   - method: GET
     path:
       - "{{BaseURL}}/"

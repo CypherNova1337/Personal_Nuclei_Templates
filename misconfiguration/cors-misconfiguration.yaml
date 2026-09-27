@@ -1,0 +1,83 @@
+id: cors-misconfiguration
+
+info:
+  name: CORS Misconfiguration - Credentialed Arbitrary Origin Reflection
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects an exploitable CORS misconfiguration where the server reflects an
+    arbitrary, unrelated external Origin into Access-Control-Allow-Origin AND
+    returns Access-Control-Allow-Credentials: true. This precise combination
+    lets a malicious site read authenticated cross-origin responses.
+
+    False-positive reduction (this template only fires when ALL hold):
+      1. The reflected origin is an unrelated, randomly-generated external
+         host (*.attacker.tld) that no application would legitimately trust,
+         so reflection cannot be an intentional allowlist entry.
+      2. Access-Control-Allow-Credentials is exactly "true" (a reflected
+         origin without credentials is usually intended and not sensitive).
+      3. Access-Control-Allow-Origin is NOT the wildcard "*" (browsers ignore
+         "*" together with credentials, so it is not exploitable).
+      4. A baseline request sent with no Origin header does not echo the
+         marker, confirming the header is dynamically reflected rather than a
+         static value that merely happens to match.
+  reference:
+    - https://portswigger.net/web-security/cors
+    - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS
+  remediation: |
+    Never reflect the Origin header. Maintain a strict server-side allowlist of
+    trusted origins and only emit Access-Control-Allow-Credentials: true for
+    origins on that list.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N
+    cvss-score: 6.5
+    cwe-id: CWE-942
+  metadata:
+    max-request: 2
+  tags: cors,misconfig,generic
+
+variables:
+  marker: "{{to_lower(rand_base(12))}}"
+
+http:
+  - raw:
+      - |
+        GET / HTTP/1.1
+        Host: {{Hostname}}
+        Origin: https://{{marker}}.attacker.tld
+        Accept: */*
+        Connection: close
+      - |
+        GET / HTTP/1.1
+        Host: {{Hostname}}
+        Accept: */*
+        Connection: close
+
+    req-condition: true
+    matchers-condition: and
+    matchers:
+      # 1. Our arbitrary external origin is reflected verbatim into ACAO.
+      - type: dsl
+        dsl:
+          - "contains(to_lower(header_1), concat('access-control-allow-origin: https://', '{{marker}}', '.attacker.tld'))"
+
+      # 2. Credentials are allowed (the dangerous part).
+      - type: dsl
+        dsl:
+          - "contains(to_lower(header_1), 'access-control-allow-credentials: true')"
+
+      # 3. Not a wildcard ACAO (wildcard + credentials is not browser-exploitable).
+      - type: dsl
+        dsl:
+          - "!contains(to_lower(header_1), 'access-control-allow-origin: *')"
+
+      # 4. Baseline (no Origin) must not contain the marker -> proves dynamic reflection.
+      - type: dsl
+        dsl:
+          - "!contains(to_lower(header_2), '{{marker}}')"
+
+    extractors:
+      - type: kval
+        part: header
+        kval:
+          - access_control_allow_origin

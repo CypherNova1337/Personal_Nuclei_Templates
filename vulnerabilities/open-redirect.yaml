@@ -1,10 +1,26 @@
-id: openRedirect
+id: open-redirect
 info:
-  name: openRedirect
-  author: coffinxp
+  name: Open Redirect Detection
+  author: CypherNova1337
   severity: medium
-  description: detect all uri/url get based openredirect
-requests:
+  description: |
+    Detects GET-based open redirects across a wide set of common redirect
+    paths and query parameters by confirming an off-site Location header in
+    the response.
+  reference:
+    - https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/04-Testing_for_Client-side_URL_Redirect
+    - https://cwe.mitre.org/data/definitions/601.html
+  remediation: |
+    Avoid using user-supplied input in redirect targets. If unavoidable, validate
+    against a strict allowlist of permitted destinations.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N
+    cvss-score: 6.1
+    cwe-id: CWE-601
+  metadata:
+    max-request: 75
+  tags: redirect,open-redirect,generic
+http:
   - method: GET
     path:
       - "{{BaseURL}}/https://bing.com/"

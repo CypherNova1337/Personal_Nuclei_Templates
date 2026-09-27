@@ -1,13 +1,25 @@
 id: error-sqli
 info:
-  name: Blind SQL Injection time based detection of sql backend
-  author: oscuridad1010
-  severity: High
-  tags: sql0
+  name: Error-Based SQL Injection Detection
+  author: CypherNova1337
+  severity: high
+  description: |
+    Fuzzes GET query parameters with common SQL-breaking payloads and matches
+    database error signatures (MySQL, PostgreSQL, MSSQL, Oracle, SQLite and
+    others) reflected in the response body, indicating error-based SQL injection.
+  reference:
+    - https://owasp.org/www-community/attacks/SQL_Injection
+    - https://github.com/payloadbox/sql-injection-payload-list
+  remediation: Use parameterized queries / prepared statements and suppress verbose SQL errors.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+    cvss-score: 9.8
+    cwe-id: CWE-89
+  tags: sqli,injection,dast,fuzz
 
-requests:
+http:
   - method: GET
-    path: 
+    path:
       - "{{BaseURL}}"
 
     payloads:

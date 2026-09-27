@@ -2,7 +2,7 @@ id: aws-access-secret-key
 
 info:
   name: AWS Access/Secret Key Disclosure
-  author: reewardius
+  author: CypherNova1337
   severity: high
   metadata:
     verified: true

@@ -1,0 +1,61 @@
+id: git-config-exposure
+
+info:
+  name: Git Config / Repository Exposure
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects a publicly exposed .git/config file. A readable .git directory
+    often allows full source-code reconstruction, and the config itself can
+    leak internal remote URLs and embedded credentials.
+  reference:
+    - https://owasp.org/www-community/attacks/Source_Code_Disclosure
+    - https://en.internetwache.org/dont-publicly-expose-git-or-how-we-downloaded-your-websites-sourcecode-31-08-2015/
+  remediation: |
+    Block access to the .git directory at the web server (deny all requests to
+    /.git/) and never deploy the version-control directory to production.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-527
+  metadata:
+    max-request: 1
+  tags: exposure,git,config,source-disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.git/config"
+
+    matchers-condition: and
+    matchers:
+      # The real INI structure of a git config - not an HTML error/redirect page.
+      - type: word
+        part: body
+        words:
+          - "[core]"
+          - "repositoryformatversion"
+        condition: and
+
+      # Exclude HTML/SPA fallbacks that echo the path in a 200 page.
+      - type: word
+        part: body
+        words:
+          - "<html"
+          - "<!doctype"
+          - "<head"
+        condition: or
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        part: body
+        name: remote_url
+        group: 1
+        regex:
+          - "url\\s*=\\s*(.+)"

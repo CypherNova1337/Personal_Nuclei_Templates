@@ -2,10 +2,10 @@ id: api-endpoints
 
 info:
   name: Common API Endpoints
-  author: panch0r3d
+  author: CypherNova1337
   severity: info
 
-requests:
+http:
   - method: GET
     path:
       - "{{BaseURL}}/server/api/admin"

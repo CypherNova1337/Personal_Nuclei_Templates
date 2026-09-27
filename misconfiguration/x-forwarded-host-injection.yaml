@@ -1,0 +1,58 @@
+id: x-forwarded-host-injection
+
+info:
+  name: X-Forwarded-Host Header Reflection
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects reflection of the X-Forwarded-Host header into the response body,
+    a Location header, or an absolute URL. Applications that build links from
+    this header are frequently vulnerable to web cache poisoning and password
+    reset poisoning.
+  reference:
+    - https://portswigger.net/web-security/host-header
+    - https://portswigger.net/web-security/web-cache-poisoning
+  remediation: |
+    Do not use the X-Forwarded-Host header to construct absolute URLs or links.
+    Rely on a server-side allowlist of trusted hostnames instead.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N
+    cvss-score: 5.4
+    cwe-id: CWE-644
+  metadata:
+    max-request: 1
+  tags: misconfig,host-injection,cache-poisoning,generic
+
+variables:
+  marker: "{{to_lower(rand_base(10))}}"
+
+http:
+  - raw:
+      - |
+        GET / HTTP/1.1
+        Host: {{Hostname}}
+        X-Forwarded-Host: {{marker}}.tld
+        X-Forwarded-For: {{marker}}.tld
+        Connection: close
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body,header
+        words:
+          - "{{marker}}.tld"
+
+      - type: status
+        status:
+          - 200
+          - 301
+          - 302
+          - 307
+          - 308
+        condition: or
+
+    extractors:
+      - type: regex
+        part: body,header
+        regex:
+          - "[a-z0-9]+\\.tld"

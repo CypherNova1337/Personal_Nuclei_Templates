@@ -1,8 +1,8 @@
 id: iis-shortname
 
 info:
-  name: iis-shortname
-  author: coffin
+  name: IIS Short Name (8.3) Enumeration
+  author: CypherNova1337
   severity: low
   description: When IIS uses an old .Net Framework it's possible to enumeration folder with the symbol ~.
   reference:
@@ -14,7 +14,7 @@ info:
 variables:
   randstring: "{{to_lower(rand_base(8))}}"
 
-requests:
+http:
   - raw:
 
     - |

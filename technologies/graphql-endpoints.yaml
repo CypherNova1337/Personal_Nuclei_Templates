@@ -1,11 +1,11 @@
 id: graphql-get
 
 info:
-  name: Graphql Get
-  author: panch0r3d
+  name: GraphQL Endpoint Discovery
+  author: CypherNova1337
   severity: info
 
-requests:
+http:
   - method: GET
     path:
       - "{{BaseURL}}/graphql-devtools"

@@ -1,0 +1,67 @@
+id: graphql-introspection-enabled
+
+info:
+  name: GraphQL Introspection Enabled
+  author: CypherNova1337
+  severity: info
+  description: |
+    Detects GraphQL endpoints that answer introspection queries. Enabled
+    introspection exposes the full schema (types, queries, mutations), which
+    accelerates discovery of sensitive operations and access-control gaps.
+  reference:
+    - https://graphql.org/learn/introspection/
+    - https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/12-API_Testing/01-Testing_GraphQL
+  remediation: Disable introspection in production GraphQL servers.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-200
+  metadata:
+    max-request: 5
+  tags: graphql,introspection,api,misconfig
+
+http:
+  - raw:
+      - |
+        POST {{path}} HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+        Accept: application/json
+
+        {"query":"query{__schema{queryType{name} types{name}}}"}
+
+    payloads:
+      path:
+        - "/graphql"
+        - "/api/graphql"
+        - "/v1/graphql"
+        - "/query"
+        - "/graphql/v1"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # A real introspection result returns the schema under data.__schema.
+      - type: word
+        part: body
+        words:
+          - '"__schema"'
+          - '"queryType"'
+        condition: and
+
+      - type: word
+        part: header
+        words:
+          - "application/json"
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        part: body
+        name: query_type
+        group: 1
+        regex:
+          - '"queryType"\\s*:\\s*\\{\\s*"name"\\s*:\\s*"([^"]+)"'
