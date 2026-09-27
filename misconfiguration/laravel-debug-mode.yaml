@@ -1,0 +1,60 @@
+id: laravel-debug-mode
+
+info:
+  name: Laravel Debug Mode Enabled (Whoops / Ignition)
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects a Laravel/PHP application exposing the Whoops or Ignition debug
+    error page (APP_DEBUG=true). These pages leak source snippets, absolute
+    paths, environment variables and framework internals.
+  reference:
+    - https://laravel.com/docs/errors
+  remediation: Set APP_DEBUG=false in production (.env).
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-489
+  metadata:
+    max-request: 2
+  tags: misconfig,laravel,php,debug,disclosure
+
+variables:
+  rand: "{{to_lower(rand_base(10))}}"
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/{{rand}}[]=1"
+      - "{{BaseURL}}/?{{rand}}[]=1"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # Whoops / Ignition debug page fingerprints.
+      - type: word
+        part: body
+        words:
+          - "Whoops\\Handler"
+          - "Whoops, looks like something went wrong"
+          - "ignition"
+          - "flareClient"
+          - "Illuminate\\"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "Stack trace"
+          - "vendor/laravel"
+          - "app_debug"
+          - "APP_ENV"
+        condition: or
+
+    extractors:
+      - type: regex
+        part: body
+        name: leaked_env
+        group: 1
+        regex:
+          - "(APP_KEY|DB_PASSWORD|APP_ENV)&quot;?\\s*[:=]\\s*&quot;?([^&<\"']+)"

@@ -1,0 +1,66 @@
+id: env-file-exposure
+
+info:
+  name: Environment (.env) File Exposure
+  author: CypherNova1337
+  severity: high
+  description: |
+    Detects a publicly readable .env file across common framework locations.
+    These files routinely contain database credentials, API keys, app secrets
+    and mail credentials.
+  reference:
+    - https://owasp.org/www-community/vulnerabilities/Information_exposure_through_query_strings_in_url
+    - https://laravel.com/docs/configuration#environment-configuration
+  remediation: |
+    Move .env outside the web root and deny direct access to dotfiles at the
+    web server. Rotate any secret that was ever web-accessible.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-200
+  metadata:
+    max-request: 5
+  tags: exposure,config,env,secret,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.env"
+      - "{{BaseURL}}/.env.local"
+      - "{{BaseURL}}/.env.production"
+      - "{{BaseURL}}/api/.env"
+      - "{{BaseURL}}/config/.env"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # Require at least two real dotenv-style KEY=VALUE assignments so a
+      # generic 200 HTML page cannot trigger this.
+      - type: regex
+        part: body
+        regex:
+          - "(?m)^\\s*(APP_KEY|APP_ENV|APP_DEBUG|DB_(HOST|DATABASE|USERNAME|PASSWORD|CONNECTION)|DATABASE_URL|MAIL_(HOST|USERNAME|PASSWORD)|REDIS_(HOST|PASSWORD)|AWS_(ACCESS_KEY_ID|SECRET_ACCESS_KEY)|SECRET_KEY|JWT_SECRET|STRIPE_(KEY|SECRET))\\s*="
+        condition: and
+
+      # Exclude SPA / framework fallback pages that return HTML with status 200.
+      - type: word
+        part: body
+        words:
+          - "<!doctype html"
+          - "<html"
+          - "<head"
+        condition: or
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        part: body
+        name: keys
+        group: 1
+        regex:
+          - "(?m)^\\s*([A-Z0-9_]+)\\s*="

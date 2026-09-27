@@ -1,0 +1,54 @@
+id: wordpress-debug-log-exposure
+
+info:
+  name: WordPress debug.log Exposure
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects an exposed WordPress debug.log. WP_DEBUG_LOG output leaks absolute
+    server paths, plugin/theme internals, SQL fragments and sometimes secrets
+    embedded in error messages.
+  reference:
+    - https://wordpress.org/documentation/article/debugging-in-wordpress/
+  remediation: Disable WP_DEBUG_LOG in production and deny access to debug.log.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-532
+  metadata:
+    max-request: 2
+  tags: exposure,wordpress,log,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/wp-content/debug.log"
+      - "{{BaseURL}}/wp-content/uploads/debug.log"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - "(?i)PHP (Notice|Warning|Fatal error|Deprecated|Parse error):"
+
+      - type: word
+        part: body
+        words:
+          - "wp-content"
+          - "wp-includes"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "<html"
+          - "<!doctype"
+        condition: or
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200

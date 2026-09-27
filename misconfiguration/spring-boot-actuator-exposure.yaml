@@ -1,0 +1,59 @@
+id: spring-boot-actuator-exposure
+
+info:
+  name: Spring Boot Actuator - Sensitive Endpoint Exposure
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects unauthenticated Spring Boot Actuator endpoints. Exposed actuators
+    such as /env, /heapdump and /mappings can disclose configuration, secrets
+    and full memory dumps, and /health//info confirm the framework surface.
+  reference:
+    - https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html
+    - https://www.veracode.com/blog/research/exploiting-spring-boot-actuators
+  remediation: |
+    Restrict actuator endpoints to management ports behind authentication, and
+    expose only /health where necessary (management.endpoints.web.exposure.include).
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-16
+  metadata:
+    max-request: 6
+  tags: misconfig,springboot,actuator,exposure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/actuator"
+      - "{{BaseURL}}/actuator/env"
+      - "{{BaseURL}}/actuator/health"
+      - "{{BaseURL}}/env"
+      - "{{BaseURL}}/health"
+      - "{{BaseURL}}/actuator/mappings"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # JSON responses distinctive to actuator endpoints.
+      - type: word
+        part: body
+        words:
+          - '"_links"'
+          - '"self"'
+          - '"propertySources"'
+          - '"activeProfiles"'
+          - '{"status":"UP"'
+          - '"contexts"'
+        condition: or
+
+      - type: word
+        part: header
+        words:
+          - "application/vnd.spring-boot.actuator"
+          - "application/json"
+        condition: or
+
+      - type: status
+        status:
+          - 200

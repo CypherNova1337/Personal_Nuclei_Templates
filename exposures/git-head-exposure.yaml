@@ -1,0 +1,45 @@
+id: git-head-exposure
+
+info:
+  name: Git HEAD Exposure
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects an exposed .git/HEAD file, a reliable indicator that the entire
+    .git directory is web-accessible and the source tree may be reconstructable.
+  reference:
+    - https://en.internetwache.org/dont-publicly-expose-git-or-how-we-downloaded-your-websites-sourcecode-31-08-2015/
+  remediation: Deny web access to the /.git/ directory and exclude it from deployments.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-527
+  metadata:
+    max-request: 1
+  tags: exposure,git,source-disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.git/HEAD"
+
+    matchers-condition: and
+    matchers:
+      # HEAD is a tiny file containing exactly a symbolic ref line.
+      - type: regex
+        part: body
+        regex:
+          - "^ref:\\s+refs/(heads|tags)/"
+
+      - type: word
+        part: body
+        words:
+          - "<html"
+          - "<!doctype"
+        condition: or
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200

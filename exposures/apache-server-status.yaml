@@ -1,0 +1,50 @@
+id: apache-server-status
+
+info:
+  name: Apache mod_status - server-status Exposure
+  author: CypherNova1337
+  severity: low
+  description: |
+    Detects an exposed Apache mod_status /server-status page. It reveals active
+    requests (including URLs and client IPs), server uptime and worker state,
+    which leaks internal traffic and aids reconnaissance.
+  reference:
+    - https://httpd.apache.org/docs/current/mod/mod_status.html
+  remediation: |
+    Restrict /server-status to localhost or trusted management IPs, or disable
+    mod_status in production.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-200
+  metadata:
+    max-request: 2
+  tags: exposure,apache,server-status,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/server-status"
+      - "{{BaseURL}}/server-status/"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "Apache Server Status"
+          - "Server uptime"
+        condition: and
+
+      - type: word
+        part: body
+        words:
+          - "Scoreboard"
+          - "Total accesses"
+          - "requests currently being processed"
+        condition: or
+
+      - type: status
+        status:
+          - 200

@@ -1,0 +1,37 @@
+id: ds-store-exposure
+
+info:
+  name: Apple .DS_Store File Exposure
+  author: CypherNova1337
+  severity: low
+  description: |
+    Detects an exposed .DS_Store file. These macOS directory-metadata files
+    leak file and directory names, aiding content discovery and mapping of
+    otherwise hidden application structure.
+  reference:
+    - https://en.wikipedia.org/wiki/.DS_Store
+    - https://digi.ninja/blog/reading_ds_store_files.php
+  remediation: Deny access to .DS_Store at the web server and exclude it from deployments.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-548
+  metadata:
+    max-request: 1
+  tags: exposure,ds-store,disclosure,osx
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.DS_Store"
+
+    matchers-condition: and
+    matchers:
+      # DS_Store magic header: 00 00 00 01 "Bud1" - unambiguous binary signature.
+      - type: binary
+        binary:
+          - "0000000142756431"
+
+      - type: status
+        status:
+          - 200

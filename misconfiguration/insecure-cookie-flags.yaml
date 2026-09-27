@@ -1,0 +1,52 @@
+id: insecure-cookie-flags
+
+info:
+  name: Session Cookie Missing HttpOnly / Secure Flags
+  author: CypherNova1337
+  severity: info
+  description: |
+    Detects a session-like cookie set without HttpOnly and Secure attributes.
+    Missing HttpOnly exposes the cookie to theft via XSS; missing Secure allows
+    it to be transmitted over cleartext HTTP.
+
+    To keep false positives low this only fires when a recognised session
+    cookie is set and NONE of the response cookies use HttpOnly, indicating a
+    genuine lack of cookie hardening rather than a single non-sensitive cookie.
+  reference:
+    - https://owasp.org/www-community/HttpOnly
+    - https://owasp.org/www-community/controls/SecureCookieAttribute
+  remediation: Set HttpOnly and Secure (and SameSite) on session cookies.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N
+    cvss-score: 3.1
+    cwe-id: CWE-1004
+  metadata:
+    max-request: 1
+  tags: misconfig,cookie,generic
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+
+    matchers-condition: and
+    matchers:
+      # A recognised session cookie is being set.
+      - type: regex
+        part: header
+        regex:
+          - "(?i)set-cookie:\\s*(PHPSESSID|JSESSIONID|ASP\\.NET_SessionId|sessionid|session|sid|connect\\.sid|laravel_session|auth_token|access_token)="
+
+      # No cookie in the response uses HttpOnly.
+      - type: word
+        part: header
+        words:
+          - "HttpOnly"
+        case-insensitive: true
+        negative: true
+
+    extractors:
+      - type: kval
+        part: header
+        kval:
+          - set_cookie

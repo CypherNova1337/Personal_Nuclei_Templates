@@ -1,0 +1,54 @@
+id: sql-dump-exposure
+
+info:
+  name: SQL Database Dump Exposure
+  author: CypherNova1337
+  severity: high
+  description: |
+    Detects an exposed SQL database dump. Dumps typically contain full table
+    schemas and row data, including user records, password hashes and other
+    sensitive information.
+  reference:
+    - https://owasp.org/www-community/vulnerabilities/Information_exposure_through_query_strings_in_url
+  remediation: Remove database dumps from the web root and restrict backup storage.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-538
+  metadata:
+    max-request: 8
+  tags: exposure,backup,sql,database,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/dump.sql"
+      - "{{BaseURL}}/backup.sql"
+      - "{{BaseURL}}/database.sql"
+      - "{{BaseURL}}/db.sql"
+      - "{{BaseURL}}/data.sql"
+      - "{{BaseURL}}/{{DN}}.sql"
+      - "{{BaseURL}}/mysql.sql"
+      - "{{BaseURL}}/site.sql"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # Signatures of a real SQL dump body, not an HTML page mentioning .sql.
+      - type: regex
+        part: body
+        regex:
+          - "(?i)(--\\s*(MySQL|MariaDB|PostgreSQL|SQLite).*dump|--\\s*Dumping data for table|CREATE TABLE\\s+[`\"\\[]?\\w|INSERT INTO\\s+[`\"\\[]?\\w)"
+
+      - type: word
+        part: body
+        words:
+          - "<html"
+          - "<!doctype"
+        condition: or
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200

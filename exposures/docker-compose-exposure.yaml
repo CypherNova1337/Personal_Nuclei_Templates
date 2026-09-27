@@ -1,0 +1,58 @@
+id: docker-compose-exposure
+
+info:
+  name: Docker Compose File Exposure
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects a publicly accessible docker-compose file. These frequently embed
+    database credentials, secret keys and internal service topology via the
+    environment section.
+  reference:
+    - https://docs.docker.com/compose/compose-file/
+  remediation: Do not serve compose files from the web root; keep secrets in a vault.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-538
+  metadata:
+    max-request: 4
+  tags: exposure,docker,config,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/docker-compose.yml"
+      - "{{BaseURL}}/docker-compose.yaml"
+      - "{{BaseURL}}/docker-compose.prod.yml"
+      - "{{BaseURL}}/docker-compose.override.yml"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - "(?m)^\\s*services\\s*:"
+
+      - type: word
+        part: body
+        words:
+          - "image:"
+          - "build:"
+          - "container_name:"
+          - "environment:"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "<html"
+          - "<!doctype"
+        condition: or
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200

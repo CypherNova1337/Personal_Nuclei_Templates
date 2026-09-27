@@ -1,0 +1,41 @@
+id: ssh-private-key-exposure
+
+info:
+  name: SSH Private Key Exposure
+  author: CypherNova1337
+  severity: high
+  description: |
+    Detects an exposed SSH private key file. A leaked private key can grant
+    direct authenticated access to servers and services that trust it.
+  reference:
+    - https://www.ssh.com/academy/ssh/private-key
+  remediation: Remove key files from the web root and rotate any exposed key immediately.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 8.6
+    cwe-id: CWE-538
+  metadata:
+    max-request: 6
+  tags: exposure,ssh,secret,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.ssh/id_rsa"
+      - "{{BaseURL}}/id_rsa"
+      - "{{BaseURL}}/.ssh/id_ed25519"
+      - "{{BaseURL}}/id_ed25519"
+      - "{{BaseURL}}/.ssh/id_dsa"
+      - "{{BaseURL}}/private.key"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - "-----BEGIN (OPENSSH|RSA|DSA|EC|PGP) PRIVATE KEY( BLOCK)?-----"
+
+      - type: status
+        status:
+          - 200

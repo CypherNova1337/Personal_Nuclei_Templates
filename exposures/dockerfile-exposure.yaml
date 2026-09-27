@@ -1,0 +1,54 @@
+id: dockerfile-exposure
+
+info:
+  name: Dockerfile Exposure
+  author: CypherNova1337
+  severity: low
+  description: |
+    Detects a publicly accessible Dockerfile. It can reveal base images,
+    build steps, internal package sources, secrets passed via ARG/ENV and the
+    application's directory layout.
+  reference:
+    - https://docs.docker.com/engine/reference/builder/
+  remediation: Do not serve build files from the web root.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-538
+  metadata:
+    max-request: 3
+  tags: exposure,docker,config,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/Dockerfile"
+      - "{{BaseURL}}/Dockerfile.prod"
+      - "{{BaseURL}}/docker/Dockerfile"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # Require a FROM plus at least one other real Dockerfile instruction.
+      - type: regex
+        part: body
+        regex:
+          - "(?m)^\\s*FROM\\s+\\S+"
+
+      - type: regex
+        part: body
+        regex:
+          - "(?m)^\\s*(RUN|COPY|ADD|CMD|ENTRYPOINT|WORKDIR|ENV|EXPOSE|ARG|LABEL|USER)\\s+"
+
+      - type: word
+        part: body
+        words:
+          - "<html"
+          - "<!doctype"
+        condition: or
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200

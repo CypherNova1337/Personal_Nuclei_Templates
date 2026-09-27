@@ -1,0 +1,57 @@
+id: directory-listing
+
+info:
+  name: Directory Listing Enabled
+  author: CypherNova1337
+  severity: low
+  description: |
+    Detects web servers that return an automatic directory index. Listings
+    expose files that were not meant to be linked, aiding discovery of backups,
+    configuration and source files.
+  reference:
+    - https://owasp.org/www-community/vulnerabilities/OWASP_Top_Ten_2004/Insecure_Configuration_Management
+    - https://portswigger.net/kb/issues/00600100_directory-listing
+  remediation: Disable automatic directory indexing (e.g. Apache "Options -Indexes").
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-548
+  metadata:
+    max-request: 6
+  tags: misconfig,listing,exposure,generic
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+      - "{{BaseURL}}/uploads/"
+      - "{{BaseURL}}/backup/"
+      - "{{BaseURL}}/files/"
+      - "{{BaseURL}}/images/"
+      - "{{BaseURL}}/assets/"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # Require both the index title and a parent-directory link, which
+      # together are specific to auto-generated listings (Apache/nginx/IIS).
+      - type: word
+        part: body
+        words:
+          - "<title>Index of /"
+          - "Directory Listing For"
+          - "[To Parent Directory]"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "Parent Directory"
+          - "Last modified"
+          - "Name</a>"
+          - "[To Parent Directory]"
+        condition: or
+
+      - type: status
+        status:
+          - 200
