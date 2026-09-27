@@ -1,0 +1,53 @@
+id: source-map-exposure
+
+info:
+  name: JavaScript Source Map Exposure
+  author: CypherNova1337
+  severity: low
+  description: |
+    Detects exposed JavaScript source maps (.js.map). Source maps embed the
+    original, un-minified source (often via sourcesContent), revealing internal
+    logic, comments, endpoints and occasionally hardcoded secrets.
+  reference:
+    - https://developer.mozilla.org/en-US/docs/Tools/Debugger/How_to/Use_a_source_map
+    - https://portswigger.net/kb/issues/00600200_source-code-disclosure
+  remediation: Do not deploy source maps to production, or restrict access to them.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-540
+  metadata:
+    max-request: 6
+  tags: exposure,source-map,disclosure,js
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/main.js.map"
+      - "{{BaseURL}}/bundle.js.map"
+      - "{{BaseURL}}/app.js.map"
+      - "{{BaseURL}}/static/js/main.js.map"
+      - "{{BaseURL}}/assets/index.js.map"
+      - "{{BaseURL}}/js/app.js.map"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # A source map is JSON with version 3 plus a mappings/sources structure.
+      - type: word
+        part: body
+        words:
+          - '"version":3'
+          - '"version": 3'
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - '"mappings"'
+          - '"sources"'
+        condition: and
+
+      - type: status
+        status:
+          - 200

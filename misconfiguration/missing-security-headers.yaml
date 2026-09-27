@@ -1,0 +1,63 @@
+id: missing-security-headers
+
+info:
+  name: Missing HTTP Security Headers (No Hardening)
+  author: CypherNova1337
+  severity: info
+  description: |
+    Flags responses that lack all major HTTP security headers at once
+    (Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options
+    and X-Frame-Options). Requiring every one to be absent keeps this to a
+    clear "no hardening applied" signal rather than nitpicking individual
+    headers, which greatly reduces noise.
+  reference:
+    - https://owasp.org/www-project-secure-headers/
+  remediation: |
+    Add Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options
+    and X-Frame-Options (or a CSP frame-ancestors directive).
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N
+    cvss-score: 3.1
+    cwe-id: CWE-693
+  metadata:
+    max-request: 1
+  tags: misconfig,headers,generic
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: header
+        words:
+          - "content-security-policy"
+        case-insensitive: true
+        negative: true
+
+      - type: word
+        part: header
+        words:
+          - "strict-transport-security"
+        case-insensitive: true
+        negative: true
+
+      - type: word
+        part: header
+        words:
+          - "x-content-type-options"
+        case-insensitive: true
+        negative: true
+
+      - type: word
+        part: header
+        words:
+          - "x-frame-options"
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200

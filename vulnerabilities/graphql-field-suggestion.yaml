@@ -1,0 +1,60 @@
+id: graphql-field-suggestion
+
+info:
+  name: GraphQL Field Suggestion Enabled
+  author: CypherNova1337
+  severity: info
+  description: |
+    Detects GraphQL endpoints with field suggestions enabled. Even when
+    introspection is disabled, "Did you mean ..." error hints let an attacker
+    brute-force and reconstruct the schema (types, fields, mutations).
+  reference:
+    - https://graphql.org/learn/validation/
+    - https://blog.yeswehack.com/yeswerhackers/how-exploit-graphql-endpoint-bug-bounty/
+  remediation: |
+    Disable field suggestions in production (e.g. NoSchemaIntrospectionCustomRule
+    plus a validation rule that strips didYouMean hints).
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-200
+  metadata:
+    max-request: 5
+  tags: graphql,api,misconfig,disclosure
+
+http:
+  - raw:
+      - |
+        POST {{path}} HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+        Accept: application/json
+
+        {"query":"query{__schema{queryTypeeee{name}}}"}
+
+    payloads:
+      path:
+        - "/graphql"
+        - "/api/graphql"
+        - "/v1/graphql"
+        - "/query"
+        - "/graphql/v1"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # The server offers a spelling suggestion for our deliberately-wrong field.
+      - type: word
+        part: body
+        words:
+          - "Did you mean"
+
+      - type: word
+        part: body
+        words:
+          - "queryType"
+
+      - type: word
+        part: header
+        words:
+          - "application/json"

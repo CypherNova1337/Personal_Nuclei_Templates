@@ -1,0 +1,45 @@
+id: http-trace-method-enabled
+
+info:
+  name: HTTP TRACE Method Enabled (Cross-Site Tracing)
+  author: CypherNova1337
+  severity: low
+  description: |
+    Detects that the HTTP TRACE method is enabled. TRACE echoes the request
+    back to the client; combined with a browser vector it enables Cross-Site
+    Tracing (XST) to read otherwise protected headers such as cookies.
+  reference:
+    - https://owasp.org/www-community/attacks/Cross_Site_Tracing
+  remediation: Disable the TRACE method at the web server.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N
+    cvss-score: 3.1
+    cwe-id: CWE-16
+  metadata:
+    max-request: 1
+  tags: misconfig,trace,xst,generic
+
+variables:
+  marker: "{{to_lower(rand_base(12))}}"
+
+http:
+  - raw:
+      - |
+        TRACE / HTTP/1.1
+        Host: {{Hostname}}
+        X-Trace-Probe: {{marker}}
+        Connection: close
+
+    matchers-condition: and
+    matchers:
+      # A working TRACE echoes the request line and our custom header.
+      - type: word
+        part: body
+        words:
+          - "TRACE / HTTP"
+          - "{{marker}}"
+        condition: and
+
+      - type: status
+        status:
+          - 200

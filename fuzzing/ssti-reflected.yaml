@@ -1,0 +1,62 @@
+id: ssti-reflected
+
+info:
+  name: Server-Side Template Injection (Reflected, Arithmetic Probe)
+  author: CypherNova1337
+  severity: high
+  description: |
+    Fuzzes query parameters with template-expression probes for several engines
+    (FreeMarker, Velocity, JSP EL / SpEL, Ruby ERB, Razor) and confirms
+    injection only when the arithmetic result 1787569 (1337*1337) is reflected.
+    Because that exact value is not part of any payload and is extremely
+    unlikely to occur naturally, a match is strong evidence of template
+    evaluation, keeping false positives very low.
+
+    Note: the Jinja2/Twig "{{ }}" family is intentionally omitted because Nuclei
+    interpolates {{ }} in payloads; use a dedicated raw template for those.
+  reference:
+    - https://portswigger.net/research/server-side-template-injection
+    - https://owasp.org/www-community/attacks/Server_Side_Template_Injection
+  remediation: |
+    Do not concatenate user input into templates. Use logic-less templates or a
+    sandboxed engine and pass user data strictly as bound variables.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+    cvss-score: 9.8
+    cwe-id: CWE-1336
+  metadata:
+    max-request: 5
+  tags: ssti,injection,dast,fuzz
+
+http:
+  - pre-condition:
+      - type: dsl
+        dsl:
+          - 'method == "GET"'
+
+    payloads:
+      ssti:
+        - "${1337*1337}"
+        - "#{1337*1337}"
+        - "<%=1337*1337%>"
+        - "@(1337*1337)"
+        - "#{ 1337*1337 }"
+
+    fuzzing:
+      - part: query
+        type: postfix
+        mode: single
+        fuzz:
+          - "{{ssti}}"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "1787569"
+
+      - type: status
+        status:
+          - 200

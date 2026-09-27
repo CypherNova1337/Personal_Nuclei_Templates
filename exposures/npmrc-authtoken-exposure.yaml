@@ -1,0 +1,48 @@
+id: npmrc-authtoken-exposure
+
+info:
+  name: NPM .npmrc Auth Token Exposure
+  author: CypherNova1337
+  severity: high
+  description: |
+    Detects an exposed .npmrc file containing an npm registry auth token or
+    basic auth. A leaked _authToken allows publishing/pulling private packages
+    and can lead to supply-chain compromise.
+  reference:
+    - https://docs.npmjs.com/cli/v10/configuring-npm/npmrc
+  remediation: Remove .npmrc from the web root and revoke any leaked token.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-538
+  metadata:
+    max-request: 2
+  tags: exposure,npm,npmrc,secret,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.npmrc"
+      - "{{BaseURL}}/api/.npmrc"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - "(_authToken|_auth|_password)\\s*="
+          - "//[^/]+/:_authToken="
+
+      - type: word
+        part: body
+        words:
+          - "<html"
+          - "<!doctype"
+        condition: or
+        case-insensitive: true
+        negative: true
+
+      - type: status
+        status:
+          - 200

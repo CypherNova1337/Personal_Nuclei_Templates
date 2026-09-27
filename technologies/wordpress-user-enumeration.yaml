@@ -1,0 +1,54 @@
+id: wordpress-user-enumeration
+
+info:
+  name: WordPress User Enumeration via REST API
+  author: CypherNova1337
+  severity: low
+  description: |
+    Detects unauthenticated user enumeration through the WordPress REST API
+    (/wp-json/wp/v2/users). Disclosed usernames/slugs are valuable for targeted
+    password attacks against wp-login and XML-RPC.
+  reference:
+    - https://developer.wordpress.org/rest-api/reference/users/
+  remediation: |
+    Restrict the users endpoint (e.g. via a security plugin or by filtering
+    rest_endpoints) and enforce strong authentication rate limiting.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-200
+  metadata:
+    max-request: 2
+  tags: wordpress,enum,api,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/wp-json/wp/v2/users"
+      - "{{BaseURL}}/?rest_route=/wp/v2/users"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # The users endpoint returns a JSON array of objects with id/name/slug.
+      - type: regex
+        part: body
+        regex:
+          - '"id"\\s*:\\s*\\d+.*"slug"\\s*:\\s*"[^"]+"'
+
+      - type: word
+        part: header
+        words:
+          - "application/json"
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        part: body
+        name: usernames
+        group: 1
+        regex:
+          - '"slug"\\s*:\\s*"([^"]+)"'

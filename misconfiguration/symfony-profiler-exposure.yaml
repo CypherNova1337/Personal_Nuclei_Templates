@@ -1,0 +1,47 @@
+id: symfony-profiler-exposure
+
+info:
+  name: Symfony Web Profiler Exposure
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects an exposed Symfony Web Profiler. When reachable in production it
+    leaks requests, session data, configuration, database queries and
+    environment details.
+  reference:
+    - https://symfony.com/doc/current/profiler.html
+  remediation: Disable the profiler/web debug toolbar in the prod environment.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-489
+  metadata:
+    max-request: 3
+  tags: misconfig,symfony,php,debug,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/_profiler"
+      - "{{BaseURL}}/_profiler/latest"
+      - "{{BaseURL}}/app_dev.php/_profiler"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "Symfony Profiler"
+          - "sf-toolbar"
+          - "Profiler</title>"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "Symfony"
+
+      - type: status
+        status:
+          - 200

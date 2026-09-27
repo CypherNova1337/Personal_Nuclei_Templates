@@ -1,0 +1,53 @@
+id: django-debug-mode
+
+info:
+  name: Django DEBUG Mode Enabled
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects a Django application running with DEBUG = True. The debug error
+    page discloses the URL configuration, installed apps, settings, exception
+    tracebacks and environment details.
+  reference:
+    - https://docs.djangoproject.com/en/stable/ref/settings/#debug
+  remediation: Set DEBUG = False in production settings.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-489
+  metadata:
+    max-request: 1
+  tags: misconfig,django,debug,disclosure
+
+variables:
+  rand: "{{to_lower(rand_base(10))}}"
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/{{rand}}"
+
+    matchers-condition: and
+    matchers:
+      # The Django debug 404/500 page carries this exact explanatory sentence.
+      - type: word
+        part: body
+        words:
+          - "You're seeing this error because you have <code>DEBUG = True</code>"
+          - "You're seeing this error because you have DEBUG = True"
+        condition: or
+
+      - type: word
+        part: body
+        words:
+          - "URLconf"
+          - "Django"
+        condition: or
+
+    extractors:
+      - type: regex
+        part: body
+        name: django_version
+        group: 1
+        regex:
+          - "Django Version:</th>\\s*<td>([0-9.]+)"

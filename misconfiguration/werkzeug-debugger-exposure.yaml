@@ -1,0 +1,44 @@
+id: werkzeug-debugger-exposure
+
+info:
+  name: Werkzeug / Flask Interactive Debugger Exposure
+  author: CypherNova1337
+  severity: high
+  description: |
+    Detects an exposed Werkzeug interactive debugger (Flask debug mode). The
+    debugger serves its own resources and, if the PIN is bypassed or disabled,
+    provides an interactive Python console leading to remote code execution.
+  reference:
+    - https://werkzeug.palletsprojects.com/en/latest/debug/
+  remediation: Never run with debug=True in production; disable the Werkzeug debugger.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+    cvss-score: 9.8
+    cwe-id: CWE-489
+  metadata:
+    max-request: 2
+  tags: misconfig,werkzeug,flask,python,debug,rce
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/?__debugger__=yes&cmd=resource&f=debugger.js"
+      - "{{BaseURL}}/console"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      # The debugger serves its own JS/HTML with these unique identifiers.
+      - type: word
+        part: body
+        words:
+          - "WEBPACK_ASSET"
+          - "$('div.traceback')"
+          - "Werkzeug"
+          - "The console is locked"
+          - "__debugger__"
+        condition: or
+
+      - type: status
+        status:
+          - 200

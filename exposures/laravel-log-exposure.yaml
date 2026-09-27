@@ -1,0 +1,48 @@
+id: laravel-log-exposure
+
+info:
+  name: Laravel Log File Exposure
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects an exposed Laravel application log (storage/logs/laravel.log). It
+    leaks stack traces with absolute paths, SQL queries, request data and
+    occasionally credentials or tokens captured in exceptions.
+  reference:
+    - https://laravel.com/docs/logging
+  remediation: Deny web access to the storage directory; keep it outside the web root.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-532
+  metadata:
+    max-request: 3
+  tags: exposure,laravel,log,disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/storage/logs/laravel.log"
+      - "{{BaseURL}}/logs/laravel.log"
+      - "{{BaseURL}}/../storage/logs/laravel.log"
+
+    stop-at-first-match: true
+    matchers-condition: and
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - "\\[\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\]\\s+\\w+\\.(ERROR|WARNING|INFO|DEBUG|CRITICAL)"
+
+      - type: word
+        part: body
+        words:
+          - "stacktrace"
+          - "#0 "
+          - "vendor/laravel"
+          - "Stack trace"
+        condition: or
+
+      - type: status
+        status:
+          - 200

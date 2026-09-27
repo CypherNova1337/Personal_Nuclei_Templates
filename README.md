@@ -64,6 +64,8 @@ nuclei -validate -t /path/to/Personal_Nuclei_Templates/
 
 ## Template index
 
+_56 templates across 7 categories._
+
 ### CVEs
 | Template | Name | Severity |
 |---|---|---|
@@ -72,52 +74,81 @@ nuclei -validate -t /path/to/Personal_Nuclei_Templates/
 ### Exposures
 | Template | Name | Severity |
 |---|---|---|
-| `exposures/env-file-exposure.yaml` | Environment (.env) File Exposure | high |
+| `exposures/wp-setup-config-exposed.yaml` | WordPress setup-config.php Exposed (Installation Available) | critical |
+| `exposures/aws-credentials-file-exposure.yaml` | AWS Credentials File Exposure | high |
 | `exposures/aws-keys-disclosure.yaml` | AWS Access/Secret Key Disclosure | high |
-| `exposures/git-config-exposure.yaml` | Git Config / Repository Exposure | medium |
+| `exposures/env-file-exposure.yaml` | Environment (.env) File Exposure | high |
+| `exposures/kubeconfig-exposure.yaml` | Kubernetes kubeconfig Exposure | high |
+| `exposures/npmrc-authtoken-exposure.yaml` | NPM .npmrc Auth Token Exposure | high |
+| `exposures/sql-dump-exposure.yaml` | SQL Database Dump Exposure | high |
+| `exposures/ssh-private-key-exposure.yaml` | SSH Private Key Exposure | high |
+| `exposures/terraform-state-exposure.yaml` | Terraform State File Exposure | high |
+| `exposures/compressed-backup-files.yaml` | Compressed Backup File - Detect | medium |
 | `exposures/credentials-disclosure.yaml` | Credentials & Secrets Disclosure (Body Regex) | medium |
-| `exposures/compressed-backup-files.yaml` | Compressed Backup File Detection | medium |
-| `exposures/php-backup-files.yaml` | PHP Source Backup File Disclosure | medium |
-| `exposures/wp-setup-config-exposed.yaml` | WordPress setup-config.php Exposed | critical |
-| `exposures/phpinfo-exposure.yaml` | PHPInfo Page Exposure | low |
-| `exposures/apache-server-status.yaml` | Apache mod_status Exposure | low |
+| `exposures/docker-compose-exposure.yaml` | Docker Compose File Exposure | medium |
+| `exposures/git-config-exposure.yaml` | Git Config / Repository Exposure | medium |
+| `exposures/git-head-exposure.yaml` | Git HEAD Exposure | medium |
+| `exposures/laravel-log-exposure.yaml` | Laravel Log File Exposure | medium |
+| `exposures/php-backup-files.yaml` | PHP Source - Backup File Information Disclosure | medium |
+| `exposures/subversion-wcdb-exposure.yaml` | Subversion (.svn) Working Copy Exposure | medium |
+| `exposures/wordpress-debug-log-exposure.yaml` | WordPress debug.log Exposure | medium |
+| `exposures/apache-server-status.yaml` | Apache mod_status - server-status Exposure | low |
+| `exposures/dockerfile-exposure.yaml` | Dockerfile Exposure | low |
 | `exposures/ds-store-exposure.yaml` | Apple .DS_Store File Exposure | low |
+| `exposures/phpinfo-exposure.yaml` | PHPInfo Page Exposure | low |
+| `exposures/source-map-exposure.yaml` | JavaScript Source Map Exposure | low |
 
 ### Misconfiguration
 | Template | Name | Severity |
 |---|---|---|
 | `misconfiguration/crlf-injection.yaml` | CRLF Injection Detection | high |
 | `misconfiguration/put-method-enabled.yaml` | PUT Method Enabled | high |
-| `misconfiguration/cors-misconfiguration.yaml` | CORS Misconfiguration (Credentialed Arbitrary Origin) | medium |
+| `misconfiguration/werkzeug-debugger-exposure.yaml` | Werkzeug / Flask Interactive Debugger Exposure | high |
+| `misconfiguration/cors-misconfiguration.yaml` | CORS Misconfiguration - Credentialed Arbitrary Origin Reflection | medium |
+| `misconfiguration/cors-null-origin.yaml` | CORS Misconfiguration - Null Origin Trusted | medium |
+| `misconfiguration/django-debug-mode.yaml` | Django DEBUG Mode Enabled | medium |
+| `misconfiguration/laravel-debug-mode.yaml` | Laravel Debug Mode Enabled (Whoops / Ignition) | medium |
+| `misconfiguration/spring-boot-actuator-exposure.yaml` | Spring Boot Actuator - Sensitive Endpoint Exposure | medium |
+| `misconfiguration/symfony-profiler-exposure.yaml` | Symfony Web Profiler Exposure | medium |
 | `misconfiguration/x-forwarded-host-injection.yaml` | X-Forwarded-Host Header Reflection | medium |
-| `misconfiguration/spring-boot-actuator-exposure.yaml` | Spring Boot Actuator Exposure | medium |
+| `misconfiguration/cloudflare-rocketloader-htmli.yaml` | Cloudflare Rocket Loader - HTML Injection | low |
 | `misconfiguration/directory-listing.yaml` | Directory Listing Enabled | low |
+| `misconfiguration/http-trace-method-enabled.yaml` | HTTP TRACE Method Enabled (Cross-Site Tracing) | low |
 | `misconfiguration/iis-shortname-enumeration.yaml` | IIS Short Name (8.3) Enumeration | low |
-| `misconfiguration/cloudflare-rocketloader-htmli.yaml` | Cloudflare Rocket Loader HTML Injection | low |
+| `misconfiguration/insecure-cookie-flags.yaml` | Session Cookie Missing HttpOnly / Secure Flags | info |
+| `misconfiguration/missing-security-headers.yaml` | Missing HTTP Security Headers (No Hardening) | info |
 
 ### Vulnerabilities
 | Template | Name | Severity |
 |---|---|---|
 | `vulnerabilities/error-based-sqli.yaml` | Error-Based SQL Injection Detection | high |
-| `vulnerabilities/linux-lfi-comprehensive.yaml` | Comprehensive Linux LFI Scanner | high |
+| `vulnerabilities/linux-lfi-comprehensive.yaml` | Comprehensive Linux Local File Inclusion (LFI) Scanner - v2 | high |
+| `vulnerabilities/nextjs-cache-poisoning.yaml` | Next.js - Cache Poisoning | high |
 | `vulnerabilities/response-based-ssrf.yaml` | Full Response SSRF Detection | high |
-| `vulnerabilities/nextjs-cache-poisoning.yaml` | Next.js Cache Poisoning | high |
 | `vulnerabilities/open-redirect.yaml` | Open Redirect Detection | medium |
+| `vulnerabilities/graphql-field-suggestion.yaml` | GraphQL Field Suggestion Enabled | info |
 | `vulnerabilities/graphql-introspection-enabled.yaml` | GraphQL Introspection Enabled | info |
+
+### Fuzzing
+| Template | Name | Severity |
+|---|---|---|
+| `fuzzing/ssti-reflected.yaml` | Server-Side Template Injection (Reflected, Arithmetic Probe) | high |
 
 ### Takeovers
 | Template | Name | Severity |
 |---|---|---|
 | `takeovers/subdomain-takeover-detect.yaml` | Subdomain Takeover Detection | high |
-| `takeovers/wordpress-takeover.yaml` | WordPress Takeover Detection | high |
+| `takeovers/wordpress-takeover.yaml` | WordPress takeover detection | high |
 
 ### Technologies
 | Template | Name | Severity |
 |---|---|---|
-| `technologies/s3-bucket-detect.yaml` | Amazon S3 Bucket Detection | info |
+| `technologies/swagger-ui-detect.yaml` | Swagger UI Config URL Injection | low |
+| `technologies/wordpress-user-enumeration.yaml` | WordPress User Enumeration via REST API | low |
+| `technologies/wordpress-xmlrpc-enabled.yaml` | WordPress XML-RPC Interface Enabled | low |
 | `technologies/api-endpoints.yaml` | Common API Endpoints | info |
 | `technologies/graphql-endpoints.yaml` | GraphQL Endpoint Discovery | info |
-| `technologies/swagger-ui-detect.yaml` | Swagger UI Config URL Injection | low |
+| `technologies/s3-bucket-detect.yaml` | Amazon S3 Bucket Detection | info |
 
 ---
 

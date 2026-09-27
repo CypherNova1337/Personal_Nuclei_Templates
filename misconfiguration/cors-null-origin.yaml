@@ -1,0 +1,47 @@
+id: cors-null-origin
+
+info:
+  name: CORS Misconfiguration - Null Origin Trusted
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects servers that trust the special "null" Origin together with
+    credentials. An attacker can obtain a null Origin from a sandboxed iframe
+    (e.g. data: or a sandboxed document) and read authenticated responses.
+  reference:
+    - https://portswigger.net/web-security/cors
+  remediation: |
+    Never reflect or allowlist the "null" origin. Use a strict allowlist of
+    explicit trusted origins.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N
+    cvss-score: 6.5
+    cwe-id: CWE-942
+  metadata:
+    max-request: 1
+  tags: cors,misconfig,generic
+
+http:
+  - raw:
+      - |
+        GET / HTTP/1.1
+        Host: {{Hostname}}
+        Origin: null
+        Accept: */*
+        Connection: close
+
+    matchers-condition: and
+    matchers:
+      - type: dsl
+        dsl:
+          - "contains(to_lower(header), 'access-control-allow-origin: null')"
+
+      - type: dsl
+        dsl:
+          - "contains(to_lower(header), 'access-control-allow-credentials: true')"
+
+    extractors:
+      - type: kval
+        part: header
+        kval:
+          - access_control_allow_origin

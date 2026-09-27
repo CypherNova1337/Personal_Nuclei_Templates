@@ -1,0 +1,42 @@
+id: subversion-wcdb-exposure
+
+info:
+  name: Subversion (.svn) Working Copy Exposure
+  author: CypherNova1337
+  severity: medium
+  description: |
+    Detects an exposed Subversion working-copy database (.svn/wc.db) or legacy
+    entries file. Like an exposed .git directory, this can allow full source
+    code recovery and leaks internal file paths.
+  reference:
+    - https://portswigger.net/kb/issues/00600200_source-code-disclosure
+  remediation: Deny web access to the /.svn/ directory and exclude it from deployments.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-527
+  metadata:
+    max-request: 2
+  tags: exposure,svn,source-disclosure
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/.svn/wc.db"
+      - "{{BaseURL}}/.svn/entries"
+
+    stop-at-first-match: true
+    matchers-condition: or
+    matchers:
+      # wc.db is a SQLite 3 database - match the file magic header (very low FP).
+      - type: binary
+        binary:
+          - "53514c69746520666f726d6174203300"
+
+      # Legacy .svn/entries references the svn working-copy schema.
+      - type: word
+        part: body
+        words:
+          - "svn:wc:"
+          - "has-props"
+        condition: or

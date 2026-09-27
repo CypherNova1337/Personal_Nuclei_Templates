@@ -1,0 +1,52 @@
+id: wordpress-xmlrpc-enabled
+
+info:
+  name: WordPress XML-RPC Interface Enabled
+  author: CypherNova1337
+  severity: low
+  description: |
+    Detects an enabled WordPress XML-RPC endpoint (xmlrpc.php). It exposes
+    system.multicall (used for amplified credential brute-force) and pingback
+    methods that can be abused for SSRF and DDoS relay.
+  reference:
+    - https://www.acunetix.com/blog/articles/wordpress-xml-rpc-security-issues/
+  remediation: |
+    Disable XML-RPC if unused (block xmlrpc.php or use a filter), and at minimum
+    disable pingback and enforce authentication rate limiting.
+  classification:
+    cvss-metrics: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+    cvss-score: 5.3
+    cwe-id: CWE-16
+  metadata:
+    max-request: 1
+  tags: wordpress,xmlrpc,misconfig
+
+http:
+  - raw:
+      - |
+        POST /xmlrpc.php HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: text/xml
+
+        <?xml version="1.0"?><methodCall><methodName>system.listMethods</methodName><params></params></methodCall>
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "<methodResponse>"
+          - "<methodName>"
+        condition: and
+
+      - type: word
+        part: body
+        words:
+          - "wp.getUsersBlogs"
+          - "system.multicall"
+          - "pingback.ping"
+        condition: or
+
+      - type: status
+        status:
+          - 200
