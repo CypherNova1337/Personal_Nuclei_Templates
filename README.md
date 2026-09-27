@@ -169,7 +169,7 @@ _56 templates across 7 categories._
 
 This is a personal collection. Suggestions and bug reports are welcome via issues.
 
-**Author:** CypherNova1337 · cyphernova7331@proton.me
+**Author:** CypherNova1337
 
 ## License
 
